@@ -38,7 +38,7 @@ export function RegisterPage() {
         navigate("/student", { replace: true });
       } else {
         toast.success("Registration submitted. Please sign in.");
-        navigate("/login", { replace: true });
+        navigate("/login/student", { replace: true });
       }
     },
   });
@@ -66,7 +66,9 @@ export function RegisterPage() {
             <Label htmlFor="matric">Matric Number</Label>
             <Input id="matric" placeholder="ENG123456" {...form.register("matricNumber")} />
             {form.formState.errors.matricNumber && (
-              <p className="text-xs text-destructive">{form.formState.errors.matricNumber.message}</p>
+              <p className="text-xs text-destructive">
+                {form.formState.errors.matricNumber.message}
+              </p>
             )}
           </div>
           <div className="space-y-2">
@@ -83,7 +85,11 @@ export function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <Input id="department" placeholder="Computer Science" {...form.register("department")} />
+              <Input
+                id="department"
+                placeholder="Computer Science"
+                {...form.register("department")}
+              />
             </div>
           </div>
           <div className="space-y-2">
@@ -96,7 +102,7 @@ export function RegisterPage() {
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-primary hover:underline">
+            <Link to="/login/student" className="font-medium text-primary hover:underline">
               Sign in
             </Link>
           </p>

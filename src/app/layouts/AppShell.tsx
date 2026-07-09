@@ -1,16 +1,30 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import type { ComponentType } from "react";
 import {
-  LayoutDashboard, Vote, Users, UserCog, Award, ClipboardList,
-  Trophy, ScrollText, Settings, LogOut, Menu, User,
+  LayoutDashboard,
+  Vote,
+  Users,
+  UserCog,
+  Award,
+  ClipboardList,
+  Trophy,
+  ScrollText,
+  Settings,
+  LogOut,
+  Menu,
+  User,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BrandLogo } from "@/app/components/BrandLogo";
@@ -46,19 +60,22 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
   const user = useAuth((s) => s.user);
   const clear = useAuth((s) => s.clear);
 
-  const initials =
-    (user?.matricNumber || user?.email || "U")
-      .replace(/[^A-Za-z0-9]/g, "")
-      .slice(0, 2)
-      .toUpperCase();
+  const initials = (user?.matricNumber || user?.email || "U")
+    .replace(/[^A-Za-z0-9]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
 
   async function handleLogout() {
     try {
       await authApi.logout().catch(() => null);
     } finally {
+      const loginPath =
+        user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "ELECTION_OFFICER"
+          ? "/login/admin"
+          : "/login/student";
       clear();
       toast.success("Signed out");
-      navigate("/login", { replace: true });
+      navigate(loginPath, { replace: true });
     }
   }
 
@@ -112,9 +129,7 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
                 {SideNav}
               </SheetContent>
             </Sheet>
-            <h1 className="truncate font-display text-lg font-semibold sm:text-xl">
-              {title}
-            </h1>
+            <h1 className="truncate font-display text-lg font-semibold sm:text-xl">{title}</h1>
           </div>
 
           <DropdownMenu>
@@ -141,7 +156,10 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
               <DropdownMenuItem onClick={() => navigate(nav[0].to)}>
                 <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive focus:text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" /> Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>

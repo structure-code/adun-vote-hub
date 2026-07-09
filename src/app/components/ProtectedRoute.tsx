@@ -4,7 +4,7 @@ import type { Role } from "@/types/api";
 
 export function ProtectedRoute({
   roles,
-  redirectTo = "/login",
+  redirectTo = "/login/student",
 }: {
   roles?: Role[];
   redirectTo?: string;
