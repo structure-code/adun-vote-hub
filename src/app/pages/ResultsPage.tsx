@@ -96,7 +96,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
               </CardContent>
             </Card>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
             {Object.entries(grouped).map(([position, candidates]) => {
               const max = Math.max(...candidates.map((candidate) => candidate.votes));
               return (

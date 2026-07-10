@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { candidatesApi } from "@/api/candidates";
 import { positionsApi } from "@/api/positions";
 import { studentsApi } from "@/api/students";
+import type { User } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,8 @@ export function CandidatesPage() {
   const positionNames = new Map(
     (positions.data ?? []).map((position) => [position.id, position.title]),
   );
+
+  const studentOptions = (students.data ?? []) as Array<User & { userId?: string }>;
 
   const create = useMutation({
     mutationFn: () => candidatesApi.create(form),
@@ -167,11 +170,14 @@ export function CandidatesPage() {
                 onChange={(e) => setForm({ ...form, userId: e.target.value })}
               >
                 <option value="">Select student</option>
-                {(students.data ?? []).map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.matricNumber || student.email || student.id}
-                  </option>
-                ))}
+                {studentOptions.map((student) => {
+                  const optionValue = student.userId ?? student.id;
+                  return (
+                    <option key={optionValue} value={optionValue}>
+                      {student.matricNumber || student.email || student.id}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <div className="space-y-2">
