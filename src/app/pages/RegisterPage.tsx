@@ -96,7 +96,11 @@ export function RegisterPage() {
         >
           <div className="space-y-2">
             <Label htmlFor="matric">Matric Number</Label>
-            <Input id="matric" placeholder="ENG123456" {...form.register("matricNumber")} />
+            <Input
+              id="matric"
+              placeholder="ADUN/FS/SEN/22/036"
+              {...form.register("matricNumber")}
+            />
             {form.formState.errors.matricNumber && (
               <p className="text-xs text-destructive">
                 {form.formState.errors.matricNumber.message}

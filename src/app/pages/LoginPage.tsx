@@ -85,7 +85,7 @@ export function LoginPage({ mode }: { mode: LoginMode }) {
               <Label htmlFor="matric">Matric Number</Label>
               <Input
                 id="matric"
-                placeholder="e.g. ENG123456"
+                placeholder="ADUN/FS/SEN/22/036"
                 autoComplete="username"
                 {...studentForm.register("matricNumber")}
               />

@@ -97,7 +97,7 @@ export function StudentsPage() {
               <Input
                 id="student-search"
                 className="pl-9"
-                placeholder="Matric number or email"
+                placeholder="ADUN/FS/SEN/22/036"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
