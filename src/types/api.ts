@@ -143,6 +143,13 @@ export interface CreateUserDto {
   password: string;
   role: Role;
 }
+export interface UpdateUserDto {
+  email?: string;
+}
+export interface ChangePasswordDto {
+  oldPassword: string;
+  newPassword: string;
+}
 export interface CreateElectionDto {
   title: string;
   startDate: string;

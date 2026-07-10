@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { usersApi } from "@/api/users";
 import type { User } from "@/types/api";
@@ -8,11 +8,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function OfficersPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [created, setCreated] = useState<User | null>(null);
+  const [searchEmail, setSearchEmail] = useState("");
+  const [foundOfficer, setFoundOfficer] = useState<User | null>(null);
   const create = useMutation({
     mutationFn: () => usersApi.createOfficer({ email, password, role: "ELECTION_OFFICER" }),
     onSuccess: (officer) => {
@@ -20,6 +33,17 @@ export function OfficersPage() {
       setEmail("");
       setPassword("");
       toast.success("Election officer created");
+    },
+  });
+  const searchOfficer = useMutation({
+    mutationFn: usersApi.searchOfficer,
+    onSuccess: setFoundOfficer,
+  });
+  const deleteOfficer = useMutation({
+    mutationFn: usersApi.remove,
+    onSuccess: () => {
+      setFoundOfficer(null);
+      toast.success("Election officer deleted");
     },
   });
   return (
@@ -32,6 +56,72 @@ export function OfficersPage() {
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Find an officer</CardTitle>
+            <CardDescription>Search for an election officer by their exact email.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <form
+              className="flex gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setFoundOfficer(null);
+                searchOfficer.mutate(searchEmail.trim());
+              }}
+            >
+              <Input
+                type="email"
+                placeholder="officer@example.com"
+                required
+                value={searchEmail}
+                onChange={(event) => setSearchEmail(event.target.value)}
+              />
+              <Button disabled={searchOfficer.isPending}>
+                {searchOfficer.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                <span className="sr-only">Search officer</span>
+              </Button>
+            </form>
+            {foundOfficer ? (
+              <div className="rounded-lg border p-4">
+                <div className="font-medium">{foundOfficer.email}</div>
+                <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+                  {foundOfficer.role}
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button className="mt-4" size="sm" variant="destructive">
+                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete officer
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {foundOfficer.email}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        The officer will immediately lose access. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteOfficer.mutate(foundOfficer.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete officer
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Search results will appear here.</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg">New officer</CardTitle>
             <CardDescription>

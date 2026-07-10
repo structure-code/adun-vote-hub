@@ -3,9 +3,13 @@ import type { UpdateStudentProfileDto, User } from "@/types/api";
 
 export const studentsApi = {
   list: () => api.get<User[]>("/api/v1/students").then((r) => r.data),
+  search: (matricNumber: string) =>
+    api.get<User>("/api/v1/students/search", { params: { matricNumber } }).then((r) => r.data),
   get: (id: string) => api.get<User>(`/api/v1/students/${id}`).then((r) => r.data),
   update: (id: string, dto: UpdateStudentProfileDto) =>
     api.patch<User>(`/api/v1/students/${id}`, dto).then((r) => r.data),
+  updateMe: (dto: UpdateStudentProfileDto) =>
+    api.patch<User>("/api/v1/students/me", dto).then((r) => r.data),
   import: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);

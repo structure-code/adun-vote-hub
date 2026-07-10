@@ -22,6 +22,7 @@ import { StudentsPage } from "./pages/admin/StudentsPage";
 import { OfficersPage } from "./pages/admin/OfficersPage";
 import { AuditLogsPage } from "./pages/admin/AuditLogsPage";
 import { InstitutionsPage } from "./pages/admin/InstitutionsPage";
+import { AccountPage } from "./pages/admin/AccountPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { StudentElectionsPage } from "./pages/student/ElectionsPage";
 import { VotePage } from "./pages/student/VotePage";
@@ -76,6 +77,7 @@ export function AppRoot() {
               <Route path="students" element={<StudentsPage />} />
               <Route path="officers" element={<OfficersPage />} />
               <Route path="results" element={<ResultsPage />} />
+              <Route path="account" element={<AccountPage />} />
               <Route path="audit" element={<AuditLogsPage />} />
               <Route path="settings" element={<InstitutionsPage />} />
             </Route>

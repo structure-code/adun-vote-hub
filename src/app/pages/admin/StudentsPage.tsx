@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileSpreadsheet, Loader2, Pencil, Search } from "lucide-react";
+import { FileSpreadsheet, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { institutionsApi } from "@/api/institutions";
 import { studentsApi } from "@/api/students";
+import { usersApi } from "@/api/users";
+import { useAuth } from "@/store/auth";
 import type { UpdateStudentProfileDto, User } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,10 +15,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function StudentsPage() {
   const client = useQueryClient();
+  const isSuperAdmin = useAuth((state) => state.user?.role === "SUPER_ADMIN");
   const [search, setSearch] = useState("");
+  const [searchedStudent, setSearchedStudent] = useState<User | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<UpdateStudentProfileDto>({});
   const students = useQuery({ queryKey: ["students"], queryFn: studentsApi.list });
@@ -65,11 +80,19 @@ export function StudentsPage() {
       toast.success("Student file imported");
     },
   });
-  const filtered = (students.data ?? []).filter((student) =>
-    `${student.matricNumber ?? ""} ${student.email ?? ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const searchStudent = useMutation({
+    mutationFn: studentsApi.search,
+    onSuccess: setSearchedStudent,
+  });
+  const deleteUser = useMutation({
+    mutationFn: usersApi.remove,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["students"] });
+      setSearchedStudent(null);
+      toast.success("Student account deleted");
+    },
+  });
+  const displayedStudents = searchedStudent ? [searchedStudent] : (students.data ?? []);
 
   function label(student: User) {
     return student.matricNumber || student.email || student.id;
@@ -90,19 +113,54 @@ export function StudentsPage() {
       </div>
       <Card>
         <CardContent className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <div className="space-y-2">
+          <form
+            className="space-y-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!search.trim()) {
+                setSearchedStudent(null);
+                return;
+              }
+              setSearchedStudent(null);
+              searchStudent.mutate(search.trim());
+            }}
+          >
             <Label htmlFor="student-search">Search students</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="student-search"
-                className="pl-9"
-                placeholder="ADUN/FS/SEN/22/036"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="student-search"
+                  className="pl-9"
+                  placeholder="ADUN/FS/SEN/22/036"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Button type="submit" disabled={searchStudent.isPending}>
+                {searchStudent.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                <span className="sr-only">Search student</span>
+              </Button>
+              {searchedStudent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setSearch("");
+                    setSearchedStudent(null);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Clear search</span>
+                </Button>
+              )}
             </div>
-          </div>
+          </form>
           <div>
             <Input
               id="student-import"
@@ -128,9 +186,9 @@ export function StudentsPage() {
           </div>
         </CardContent>
       </Card>
-      {students.isLoading ? (
+      {students.isLoading || searchStudent.isPending ? (
         <Skeleton className="h-60" />
-      ) : filtered.length === 0 ? (
+      ) : displayedStudents.length === 0 ? (
         <Card>
           <CardContent className="py-14 text-center text-sm text-muted-foreground">
             No students found.
@@ -149,7 +207,7 @@ export function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {filtered.map((student) => (
+                {displayedStudents.map((student) => (
                   <tr key={student.id}>
                     <td className="p-4">
                       <div className="font-medium">{label(student)}</div>
@@ -164,10 +222,43 @@ export function StudentsPage() {
                     </td>
                     <td className="p-4">{student.isVerified ? "Yes" : "No"}</td>
                     <td className="p-4 text-right">
-                      <Button size="sm" variant="outline" onClick={() => setSelectedId(student.id)}>
-                        <Pencil className="mr-2 h-3.5 w-3.5" />
-                        Manage
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedId(student.id)}
+                        >
+                          <Pencil className="mr-2 h-3.5 w-3.5" />
+                          Manage
+                        </Button>
+                        {isSuperAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span className="sr-only">Delete {label(student)}</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete {label(student)}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This permanently removes the user account and cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteUser.mutate(student.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete user
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

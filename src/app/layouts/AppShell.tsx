@@ -47,6 +47,7 @@ const adminNav: NavItem[] = [
   { to: "/admin/students", label: "Students", icon: Users },
   { to: "/admin/officers", label: "Officers", icon: UserCog, roles: ["SUPER_ADMIN"] },
   { to: "/admin/results", label: "Results", icon: Trophy },
+  { to: "/admin/account", label: "Account", icon: User },
   { to: "/admin/audit", label: "Audit Logs", icon: ScrollText, roles: ["SUPER_ADMIN"] },
   { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["SUPER_ADMIN"] },
 ];
@@ -64,6 +65,7 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
   const user = useAuth((s) => s.user);
   const clear = useAuth((s) => s.clear);
   const visibleNav = nav.filter((item) => !item.roles || item.roles.includes(user?.role ?? ""));
+  const accountPath = user?.role === "STUDENT" ? "/student/profile" : "/admin/account";
 
   const initials = (user?.matricNumber || user?.email || "U")
     .replace(/[^A-Za-z0-9]/g, "")
@@ -160,6 +162,9 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate(visibleNav[0]?.to ?? "/")}>
                 <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(accountPath)}>
+                <User className="mr-2 h-4 w-4" /> Account settings
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleLogout}
