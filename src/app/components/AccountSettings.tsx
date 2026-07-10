@@ -157,43 +157,45 @@ export function AccountSettings() {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/40 lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-lg text-destructive">Delete account</CardTitle>
-          <CardDescription>
-            Permanently remove your user account. This action cannot be undone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete my account
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your profile and access to the voting system will be removed. This cannot be
-                  reversed.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => deleteAccount.mutate()}
-                  disabled={deleteAccount.isPending}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {deleteAccount.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete account
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+      {user?.role?.toLowerCase() !== "admin" && (
+        <Card className="border-destructive/40 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg text-destructive">Delete account</CardTitle>
+            <CardDescription>
+              Permanently remove your user account. This action cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete my account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your profile and access to the voting system will be removed. This cannot be
+                    reversed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteAccount.mutate()}
+                    disabled={deleteAccount.isPending}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleteAccount.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Delete account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
