@@ -43,12 +43,12 @@ const workflow = [
 
 export function LandingPage() {
   const hydrated = useAuth((s) => s.hydrated);
-  const token = useAuth((s) => s.accessToken);
+  const authenticated = useAuth((s) => s.authenticated);
   const user = useAuth((s) => s.user);
   const isAdmin =
     user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" || user?.role === "ELECTION_OFFICER";
   const dashboardPath = isAdmin ? "/admin" : "/student";
-  const isSignedIn = hydrated && !!token;
+  const isSignedIn = hydrated && authenticated;
 
   return (
     <div className="min-h-screen bg-background text-foreground">

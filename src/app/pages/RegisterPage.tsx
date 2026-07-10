@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authApi } from "@/api/auth";
 import { institutionsApi } from "@/api/institutions";
-import { useAuth } from "@/store/auth";
 
 const schema = z
   .object({
@@ -31,7 +30,6 @@ type FormValues = z.infer<typeof schema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const setSession = useAuth((s) => s.setSession);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const form = useForm<FormValues>({
@@ -60,19 +58,9 @@ export function RegisterPage() {
 
   const mutation = useMutation({
     mutationFn: authApi.studentRegister,
-    onSuccess: async (res) => {
-      if (res.accessToken || res.data?.accessToken || res.token) {
-        setSession(res);
-        if (!res.user && !res.data?.user) {
-          const profile = await authApi.me().catch(() => null);
-          if (profile) useAuth.getState().setUser(profile);
-        }
-        toast.success("Account created");
-        navigate("/student", { replace: true });
-      } else {
-        toast.success("Registration submitted. Please sign in.");
-        navigate("/login/student", { replace: true });
-      }
+    onSuccess: () => {
+      toast.success("Registration submitted. Please sign in.");
+      navigate("/login/student", { replace: true });
     },
   });
 

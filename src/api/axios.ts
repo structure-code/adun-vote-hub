@@ -4,109 +4,95 @@ import { toast } from "sonner";
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://api-voting.workfromanywhere.name.ng";
 
-// Lightweight token accessor decoupled from the store to avoid circular imports.
-// The auth store initializes these on hydrate / login / logout.
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
-export function setTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
-  if (tokens.accessToken !== undefined) accessToken = tokens.accessToken ?? null;
-  if (tokens.refreshToken !== undefined) refreshToken = tokens.refreshToken ?? null;
-}
-
-export function getAccessToken() {
-  return accessToken;
-}
-export function getRefreshToken() {
-  return refreshToken;
-}
-
-export function setOnUnauthorized(cb: () => void) {
-  onUnauthorized = cb;
+export function setOnUnauthorized(callback: () => void) {
+  onUnauthorized = callback;
 }
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20000,
+  timeout: 20_000,
+  // Access and refresh tokens are HttpOnly cookies. This makes the browser
+  // attach them to every same-origin or CORS credentialed request.
+  withCredentials: true,
 });
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (accessToken) {
-    config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>)["Authorization"] = `Bearer ${accessToken}`;
-  }
-  return config;
-});
+type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
-// Single-flight refresh
-let refreshPromise: Promise<string | null> | null = null;
+const loginPaths = ["/api/v1/auth/admin/login", "/api/v1/auth/student/login"];
+const refreshPath = "/api/v1/auth/refresh";
 
-async function refresh(): Promise<string | null> {
-  if (!refreshToken) return null;
+function isLoginRequest(url?: string) {
+  return loginPaths.some((path) => url?.includes(path));
+}
+
+function isRefreshRequest(url?: string) {
+  return url?.includes(refreshPath) ?? false;
+}
+
+function errorMessage(error: AxiosError<{ message?: string | string[] }>) {
+  const message = error.response?.data?.message;
+  return (
+    (Array.isArray(message) ? message.join(", ") : message) ||
+    error.message ||
+    "Something went wrong"
+  );
+}
+
+// A burst of failed requests should produce only one refresh request.
+let refreshPromise: Promise<boolean> | null = null;
+let sessionExpiryHandled = false;
+
+async function refreshSession(): Promise<boolean> {
   try {
-    const { data } = await axios.post(
-      `${API_BASE_URL}/api/v1/auth/refresh`,
+    await axios.post(
+      `${API_BASE_URL}${refreshPath}`,
       {},
-      { headers: { Authorization: `Bearer ${refreshToken}` } },
+      {
+        timeout: 20_000,
+        withCredentials: true,
+      },
     );
-    const newAccess = data?.accessToken ?? data?.data?.accessToken ?? data?.token ?? null;
-    const newRefresh = data?.refreshToken ?? data?.data?.refreshToken ?? null;
-    if (newAccess) {
-      setTokens({ accessToken: newAccess, refreshToken: newRefresh ?? refreshToken });
-      return newAccess;
-    }
+    sessionExpiryHandled = false;
+    return true;
   } catch {
-    // fallthrough to logout
+    return false;
   }
-  return null;
 }
 
 api.interceptors.response.use(
-  (r) => r,
+  (response) => response,
   async (error: AxiosError<{ message?: string | string[] }>) => {
     const status = error.response?.status;
-    const original = error.config as
-      | (InternalAxiosRequestConfig & { _retry?: boolean })
-      | undefined;
+    const original = error.config as RetryableRequest | undefined;
+    const excludedFromRefresh = isLoginRequest(original?.url) || isRefreshRequest(original?.url);
 
-    // Try token refresh once on 401
-    if (
-      status === 401 &&
-      original &&
-      !original._retry &&
-      refreshToken &&
-      !original.url?.includes("/auth/")
-    ) {
+    if (status === 401 && original && !original._retry && !excludedFromRefresh) {
       original._retry = true;
-      refreshPromise ??= refresh().finally(() => (refreshPromise = null));
-      const newToken = await refreshPromise;
-      if (newToken) {
-        original.headers = original.headers ?? {};
-        (original.headers as Record<string, string>)["Authorization"] = `Bearer ${newToken}`;
+      refreshPromise ??= refreshSession().finally(() => {
+        refreshPromise = null;
+      });
+
+      if (await refreshPromise) {
+        // The refresh endpoint replaced the access-token cookie. Retrying the
+        // original config automatically sends the new cookie.
         return api(original);
       }
-      // Refresh failed → sign out
-      onUnauthorized?.();
-      toast.error("Your session expired. Please sign in again.");
+
+      if (!sessionExpiryHandled) {
+        sessionExpiryHandled = true;
+        onUnauthorized?.();
+        toast.error("Your session expired. Please sign in again.");
+      }
       return Promise.reject(error);
     }
 
-    if (status === 401) {
-      onUnauthorized?.();
-    }
-
-    // Global error toasts (skip for logout / silent endpoints)
+    // Login and refresh 401s must not recursively refresh or erase an existing
+    // local session. Surface their backend message like any other API error.
     if (!error.config?.headers?.["x-silent"]) {
-      const msg =
-        (Array.isArray(error.response?.data?.message)
-          ? error.response?.data?.message?.join(", ")
-          : error.response?.data?.message) ||
-        error.message ||
-        "Something went wrong";
-
-      if (status && status >= 400 && status !== 401) {
-        toast.error(msg);
+      if (status && status >= 400) {
+        toast.error(errorMessage(error));
       } else if (!status) {
         toast.error("Network error. Please check your connection.");
       }

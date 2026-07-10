@@ -39,13 +39,6 @@ export function LoginPage({ mode }: { mode: LoginMode }) {
 
   function afterLogin(res: AuthResponse, fallback: string) {
     setSession(res);
-    // Hydrate profile if not included in response
-    if (!res.user && !res.data?.user) {
-      authApi
-        .me()
-        .then((u) => useAuth.getState().setUser(u))
-        .catch(() => null);
-    }
     toast.success("Signed in");
     navigate(from || fallback, { replace: true });
   }
@@ -180,11 +173,7 @@ export function LoginPage({ mode }: { mode: LoginMode }) {
                   aria-label={showAdminPassword ? "Hide password" : "Show password"}
                   tabIndex={-1}
                 >
-                  {showAdminPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {adminForm.formState.errors.password && (

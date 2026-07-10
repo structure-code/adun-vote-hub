@@ -40,17 +40,9 @@ export interface User {
   updatedAt?: string;
 }
 
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
-}
-
 export interface AuthResponse {
-  accessToken?: string;
-  refreshToken?: string;
-  token?: string;
   user?: User;
-  data?: { accessToken?: string; refreshToken?: string; user?: User };
+  data?: { user?: User };
   [k: string]: unknown;
 }
 

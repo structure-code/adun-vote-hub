@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { setOnUnauthorized } from "@/api/axios";
+import { authApi } from "@/api/auth";
 import { useAuth } from "@/store/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthLayout } from "./layouts/AuthLayout";
@@ -29,11 +30,22 @@ import { ProfilePage } from "./pages/student/ProfilePage";
 const queryClient = new QueryClient();
 
 export function AppRoot() {
+  const hydrated = useAuth((state) => state.hydrated);
+  const authenticated = useAuth((state) => state.authenticated);
+
   useEffect(() => {
     setOnUnauthorized(() => {
       useAuth.getState().clear();
     });
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !authenticated) return;
+    authApi
+      .me()
+      .then((user) => useAuth.getState().setUser(user))
+      .catch(() => null);
+  }, [authenticated, hydrated]);
 
   return (
     <QueryClientProvider client={queryClient}>

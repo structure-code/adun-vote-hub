@@ -11,7 +11,7 @@ export function ProtectedRoute({
 }) {
   const location = useLocation();
   const hydrated = useAuth((s) => s.hydrated);
-  const token = useAuth((s) => s.accessToken);
+  const authenticated = useAuth((s) => s.authenticated);
   const user = useAuth((s) => s.user);
 
   if (!hydrated) {
@@ -22,7 +22,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!token) {
+  if (!authenticated) {
     return <Navigate to={redirectTo} replace state={{ from: location }} />;
   }
 
