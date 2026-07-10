@@ -157,7 +157,7 @@ export function AccountSettings() {
         </CardContent>
       </Card>
 
-      {user?.role?.toLowerCase() !== "admin" && (
+      {/* {user?.role?.toLowerCase() !== "admin" && (
         <Card className="border-destructive/40 lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-destructive">Delete account</CardTitle>
@@ -195,7 +195,7 @@ export function AccountSettings() {
             </AlertDialog>
           </CardContent>
         </Card>
-      )}
+      )} */}
     </div>
   );
 }

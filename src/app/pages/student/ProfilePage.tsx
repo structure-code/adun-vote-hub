@@ -10,6 +10,7 @@ import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -46,7 +47,6 @@ export function ProfilePage() {
     queryFn: institutionsApi.levels.list,
   });
 
-  // Populate form tracking the nested studentProfile object
   useEffect(() => {
     if (!profile.data?.studentProfile) return;
     const sp = profile.data.studentProfile;
@@ -65,31 +65,28 @@ export function ProfilePage() {
         levelId: form.levelId || undefined,
       }),
     onSuccess: (updatedUser) => {
-  const currentData = profile.data!;
-  
-  // Explicitly type it as your 'User' interface
-  const mergedUser: User = {
-    ...currentData,
-    ...updatedUser,
-    studentProfile: {
-      ...(currentData.studentProfile || {}),
-      ...(updatedUser?.studentProfile || {}),
-      // Use 'as string' or fallback to ensure it matches your interface strings
-      facultyId: updatedUser?.studentProfile?.facultyId ?? form.facultyId,
-      departmentId: updatedUser?.studentProfile?.departmentId ?? form.departmentId,
-      levelId: updatedUser?.studentProfile?.levelId ?? form.levelId,
-      // Carry over structural fields from old state if updatedUser lacks them
-      id: currentData.studentProfile?.id ?? "",
-      userId: currentData.id,
-      isActive: updatedUser?.studentProfile?.isActive ?? currentData.studentProfile?.isActive ?? true,
-      isVerified: updatedUser?.studentProfile?.isVerified ?? currentData.studentProfile?.isVerified ?? false,
-    },
-  };
+      const currentData = profile.data!;
+      
+      const mergedUser: User = {
+        ...currentData,
+        ...updatedUser,
+        studentProfile: {
+          ...(currentData.studentProfile || {}),
+          ...(updatedUser?.studentProfile || {}),
+          facultyId: updatedUser?.studentProfile?.facultyId ?? form.facultyId,
+          departmentId: updatedUser?.studentProfile?.departmentId ?? form.departmentId,
+          levelId: updatedUser?.studentProfile?.levelId ?? form.levelId,
+          id: currentData.studentProfile?.id ?? "",
+          userId: currentData.id,
+          isActive: updatedUser?.studentProfile?.isActive ?? currentData.studentProfile?.isActive ?? true,
+          isVerified: updatedUser?.studentProfile?.isVerified ?? currentData.studentProfile?.isVerified ?? false,
+        },
+      };
 
-  client.setQueryData(["profile"], mergedUser);
-  setUser(mergedUser);
-  toast.success("Student profile updated");
-},
+      client.setQueryData(["profile"], mergedUser);
+      setUser(mergedUser);
+      toast.success("Student profile updated");
+    },
   });
 
   if (profile.isLoading) return <Skeleton className="h-64" />;
@@ -100,24 +97,44 @@ export function ProfilePage() {
   const institutionName = (value: { name?: string } | string | undefined, fallback?: string) =>
     typeof value === "string" ? value : value?.name || fallback;
 
+  const currentLevelName = institutionName(studentProfile?.level, studentProfile?.levelRecord?.name);
+
   const rows = [
-    ["Matric number", user?.matricNumber],
-    ["Email", user?.email],
-    ["Role", user?.role],
+    ["Matric number", <span className="font-medium" key="matric">{user?.matricNumber || "Not set"}</span>],
+    ["Email", <span className="font-medium" key="email">{user?.email || "Not set"}</span>],
+    ["Role", <span className="font-medium" key="role">{user?.role}</span>],
     [
       "Faculty", 
-      institutionName(studentProfile?.faculty, studentProfile?.facultyRecord?.name || studentProfile?.facultyId)
+      <span className="font-medium" key="faculty">
+        {institutionName(studentProfile?.faculty, studentProfile?.facultyRecord?.name || studentProfile?.facultyId) || "Not set"}
+      </span>
     ],
     [
       "Department",
-      institutionName(studentProfile?.department, studentProfile?.departmentRecord?.name || studentProfile?.departmentId),
+      <span className="font-medium" key="dept">
+        {institutionName(studentProfile?.department, studentProfile?.departmentRecord?.name || studentProfile?.departmentId) || "Not set"}
+      </span>,
     ],
     [
       "Level", 
-      institutionName(studentProfile?.level, studentProfile?.levelRecord?.name || studentProfile?.levelId)
+      <span className="font-medium" key="level">{currentLevelName || "Not set"}</span>
     ],
-    ["Account active", studentProfile?.isActive === false ? "No" : "Yes"],
-    ["Verified", studentProfile?.isVerified ? "Yes" : "No"],
+    [
+      "Account active", 
+      studentProfile?.isActive !== false ? (
+        <Badge key="active" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-transparent shadow-none">Active</Badge>
+      ) : (
+        <Badge key="inactive" variant="destructive">Inactive</Badge>
+      )
+    ],
+    [
+      "Verified", 
+      studentProfile?.isVerified ? (
+        <Badge key="verified" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-transparent shadow-none">Verified</Badge>
+      ) : (
+        <Badge key="unverified" variant="secondary">Unverified</Badge>
+      )
+    ],
   ];
 
   return (
@@ -136,9 +153,9 @@ export function ProfilePage() {
           </CardHeader>
           <CardContent className="divide-y">
             {rows.map(([label, value]) => (
-              <div key={label} className="grid grid-cols-[9rem_minmax(0,1fr)] gap-3 py-3 text-sm">
+              <div key={label as string} className="grid grid-cols-[9rem_minmax(0,1fr)] gap-3 py-3 text-sm items-center">
                 <span className="text-muted-foreground">{label}</span>
-                <span className="wrap-break-word font-medium">{value || "Not set"}</span>
+                <div className="wrap-break-word">{value}</div>
               </div>
             ))}
           </CardContent>
@@ -146,7 +163,14 @@ export function ProfilePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Academic profile</CardTitle>
+            <CardTitle className="text-lg flex items-center justify-between gap-2">
+              <span>Academic profile</span>
+              {currentLevelName && (
+                <Badge variant="outline" className="font-mono text-xs font-semibold px-2 py-0.5">
+                  {currentLevelName}
+                </Badge>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form
