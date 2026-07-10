@@ -139,7 +139,7 @@ export function CandidatesPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="bg-green-800"
+                    className="bg-green-800 text-white hover:bg-green-700"
                     disabled={approve.isPending}
                     onClick={() =>
                       approve.mutate({ id: candidate.id, isApproved: !candidate.isApproved })
