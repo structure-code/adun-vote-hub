@@ -29,6 +29,17 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
     return acc;
   }, {});
 
+  // Compute total votes across all positions (sum of all candidate votes)
+  const totalVotesComputed = Object.values(grouped).reduce(
+    (acc, candidates) => acc + candidates.reduce((s, c) => s + (c.votes ?? 0), 0),
+    0,
+  );
+
+  const electionTitle =
+    results.data?.electionTitle || elections.data?.find((e) => e.id === electionId)?.title;
+  const electionStatus =
+    results.data?.status || elections.data?.find((e) => e.id === electionId)?.status;
+
   return (
     <div className="space-y-6">
       <div>
@@ -81,7 +92,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
                   Total votes
                 </div>
                 <div className="mt-1 font-display text-3xl font-bold">
-                  {results.data?.totalVotes ?? rows.reduce((sum, row) => sum + row.votes, 0)}
+                  {results.data?.totalVotes ?? totalVotesComputed}
                 </div>
               </CardContent>
             </Card>
@@ -96,6 +107,14 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
               </CardContent>
             </Card>
           </div>
+          {electionTitle || electionStatus ? (
+            <div className="space-y-1">
+              {electionTitle && <div className="text-sm font-medium">{electionTitle}</div>}
+              {electionStatus && (
+                <div className="text-xs text-muted-foreground">Status: {electionStatus}</div>
+              )}
+            </div>
+          ) : null}
           <div className="flex flex-col gap-4">
             {Object.entries(grouped).map(([position, candidates]) => {
               const max = Math.max(...candidates.map((candidate) => candidate.votes));
