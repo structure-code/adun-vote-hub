@@ -146,8 +146,8 @@ export function PositionsPage() {
               save.mutate();
             }}
           >
-            <div className="space-y-2">
-              <Label htmlFor="position-election">Election</Label>
+            <div className="space-y-2 flex flex-col gap-3">
+              <Label htmlFor="position-election block">Election</Label>
               <select
                 id="position-election"
                 required
