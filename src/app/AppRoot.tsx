@@ -14,7 +14,17 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { StudentDashboard } from "./pages/student/StudentDashboard";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { ElectionsPage } from "./pages/admin/ElectionsPage";
+import { PositionsPage } from "./pages/admin/PositionsPage";
+import { CandidatesPage } from "./pages/admin/CandidatesPage";
+import { StudentsPage } from "./pages/admin/StudentsPage";
+import { OfficersPage } from "./pages/admin/OfficersPage";
+import { AuditLogsPage } from "./pages/admin/AuditLogsPage";
+import { InstitutionsPage } from "./pages/admin/InstitutionsPage";
+import { ResultsPage } from "./pages/ResultsPage";
+import { StudentElectionsPage } from "./pages/student/ElectionsPage";
+import { VotePage } from "./pages/student/VotePage";
+import { ProfilePage } from "./pages/student/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -48,25 +58,24 @@ export function AppRoot() {
           >
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
-              <Route path="elections" element={<PlaceholderPage title="Elections" />} />
-              <Route path="positions" element={<PlaceholderPage title="Positions" />} />
-              <Route path="candidates" element={<PlaceholderPage title="Candidates" />} />
-              <Route path="students" element={<PlaceholderPage title="Students" />} />
-              <Route path="officers" element={<PlaceholderPage title="Election Officers" />} />
-              <Route path="results" element={<PlaceholderPage title="Results" />} />
-              <Route path="audit" element={<PlaceholderPage title="Audit Logs" />} />
-              <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+              <Route path="elections" element={<ElectionsPage />} />
+              <Route path="positions" element={<PositionsPage />} />
+              <Route path="candidates" element={<CandidatesPage />} />
+              <Route path="students" element={<StudentsPage />} />
+              <Route path="officers" element={<OfficersPage />} />
+              <Route path="results" element={<ResultsPage />} />
+              <Route path="audit" element={<AuditLogsPage />} />
+              <Route path="settings" element={<InstitutionsPage />} />
             </Route>
           </Route>
 
           <Route element={<ProtectedRoute roles={["STUDENT"]} redirectTo="/login/student" />}>
             <Route path="/student" element={<StudentLayout />}>
               <Route index element={<StudentDashboard />} />
-              <Route path="elections" element={<PlaceholderPage title="Elections" />} />
-              <Route path="vote/:electionId" element={<PlaceholderPage title="Cast your vote" />} />
-              <Route path="history" element={<PlaceholderPage title="Voting History" />} />
-              <Route path="results" element={<PlaceholderPage title="Results" />} />
-              <Route path="profile" element={<PlaceholderPage title="Profile" />} />
+              <Route path="elections" element={<StudentElectionsPage />} />
+              <Route path="vote/:electionId" element={<VotePage />} />
+              <Route path="results" element={<ResultsPage audience="student" />} />
+              <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>
 

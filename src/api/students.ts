@@ -9,8 +9,6 @@ export const studentsApi = {
   import: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
-    return api
-      .post("/api/v1/students/import", fd, { headers: { "Content-Type": "multipart/form-data" } })
-      .then((r) => r.data);
+    return api.post("/api/v1/students/import", fd).then((r) => r.data);
   },
 };

@@ -1,7 +1,8 @@
 import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 
-export const API_BASE_URL = "https://api-voting.workfromanywhere.name.ng";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://api-voting.workfromanywhere.name.ng";
 
 // Lightweight token accessor decoupled from the store to avoid circular imports.
 // The auth store initializes these on hydrate / login / logout.
@@ -14,10 +15,16 @@ export function setTokens(tokens: { accessToken?: string | null; refreshToken?: 
   if (tokens.refreshToken !== undefined) refreshToken = tokens.refreshToken ?? null;
 }
 
-export function getAccessToken() { return accessToken; }
-export function getRefreshToken() { return refreshToken; }
+export function getAccessToken() {
+  return accessToken;
+}
+export function getRefreshToken() {
+  return refreshToken;
+}
 
-export function setOnUnauthorized(cb: () => void) { onUnauthorized = cb; }
+export function setOnUnauthorized(cb: () => void) {
+  onUnauthorized = cb;
+}
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -43,8 +50,7 @@ async function refresh(): Promise<string | null> {
       {},
       { headers: { Authorization: `Bearer ${refreshToken}` } },
     );
-    const newAccess =
-      data?.accessToken ?? data?.data?.accessToken ?? data?.token ?? null;
+    const newAccess = data?.accessToken ?? data?.data?.accessToken ?? data?.token ?? null;
     const newRefresh = data?.refreshToken ?? data?.data?.refreshToken ?? null;
     if (newAccess) {
       setTokens({ accessToken: newAccess, refreshToken: newRefresh ?? refreshToken });
@@ -60,10 +66,18 @@ api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError<{ message?: string | string[] }>) => {
     const status = error.response?.status;
-    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    const original = error.config as
+      | (InternalAxiosRequestConfig & { _retry?: boolean })
+      | undefined;
 
     // Try token refresh once on 401
-    if (status === 401 && original && !original._retry && refreshToken && !original.url?.includes("/auth/")) {
+    if (
+      status === 401 &&
+      original &&
+      !original._retry &&
+      refreshToken &&
+      !original.url?.includes("/auth/")
+    ) {
       original._retry = true;
       refreshPromise ??= refresh().finally(() => (refreshPromise = null));
       const newToken = await refreshPromise;

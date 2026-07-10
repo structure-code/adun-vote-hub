@@ -1,14 +1,39 @@
 export type Role = "SUPER_ADMIN" | "ADMIN" | "ELECTION_OFFICER" | "STUDENT" | string;
-export type ElectionStatus = "DRAFT" | "SCHEDULED" | "ACTIVE" | "CLOSED" | string;
+export type ElectionStatus = "DRAFT" | "SCHEDULED" | "ONGOING" | "ENDED" | "ARCHIVED" | string;
+
+export interface InstitutionBase {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Faculty extends InstitutionBase {
+  departments?: Department[];
+}
+
+export interface Department extends InstitutionBase {
+  facultyId: string;
+  faculty?: Faculty;
+}
+
+export type Level = InstitutionBase;
 
 export interface User {
   id: string;
   email?: string;
   matricNumber?: string;
   role: Role;
-  faculty?: string;
-  department?: string;
-  level?: string;
+  facultyId?: string;
+  departmentId?: string;
+  levelId?: string;
+  faculty?: Faculty | string;
+  department?: Department | string;
+  level?: Level | string;
+  facultyRecord?: Faculty;
+  departmentRecord?: Department;
+  levelRecord?: Level;
   isActive?: boolean;
   isVerified?: boolean;
   createdAt?: string;
@@ -55,6 +80,7 @@ export interface Candidate {
   manifesto?: string;
   isApproved?: boolean;
   pictureUrl?: string;
+  picture?: string;
   user?: User;
   position?: Position;
 }
@@ -76,6 +102,16 @@ export interface ElectionResults {
   winners?: VoteResult[];
 }
 
+export interface VoteReceipt {
+  id?: string;
+  electionId?: string;
+  positionId?: string;
+  candidateId?: string;
+  message?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
 export interface AuditLog {
   id: string;
   action: string;
@@ -93,14 +129,20 @@ export interface Paginated<T> {
 }
 
 // DTOs
-export interface AdminLoginDto { email: string; password: string }
-export interface StudentLoginDto { matricNumber: string; password: string }
+export interface AdminLoginDto {
+  email: string;
+  password: string;
+}
+export interface StudentLoginDto {
+  matricNumber: string;
+  password: string;
+}
 export interface StudentRegisterDto {
   matricNumber: string;
   password: string;
-  faculty?: string;
-  department?: string;
-  level?: string;
+  facultyId?: string;
+  departmentId?: string;
+  levelId?: string;
 }
 export interface CreateUserDto {
   email?: string;
@@ -122,9 +164,9 @@ export interface CreatePositionDto {
 }
 export type UpdatePositionDto = Partial<CreatePositionDto>;
 export interface UpdateStudentProfileDto {
-  faculty?: string;
-  department?: string;
-  level?: string;
+  facultyId?: string;
+  departmentId?: string;
+  levelId?: string;
   isActive?: boolean;
   isVerified?: boolean;
 }
@@ -139,3 +181,20 @@ export interface CreateVoteDto {
   positionId: string;
   candidateId: string;
 }
+
+export interface CreateFacultyDto {
+  name: string;
+  description?: string;
+}
+export type UpdateFacultyDto = Partial<CreateFacultyDto>;
+export interface CreateDepartmentDto {
+  name: string;
+  description?: string;
+  facultyId: string;
+}
+export type UpdateDepartmentDto = Partial<CreateDepartmentDto>;
+export interface CreateLevelDto {
+  name: string;
+  description?: string;
+}
+export type UpdateLevelDto = Partial<CreateLevelDto>;

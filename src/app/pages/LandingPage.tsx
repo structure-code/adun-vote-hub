@@ -127,11 +127,13 @@ export function LandingPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:max-w-4xl">
-              {[
-                ["Active elections", "Live student ballot access", Vote],
-                ["Election officers", "Role-based administration", UserCheck],
-                ["Results center", "Clear reporting after polls", BarChart3],
-              ].map(([title, detail, Icon]) => (
+              {(
+                [
+                  ["Active elections", "Live student ballot access", Vote],
+                  ["Election officers", "Role-based administration", UserCheck],
+                  ["Results center", "Clear reporting after polls", BarChart3],
+                ] as const
+              ).map(([title, detail, Icon]) => (
                 <div
                   key={title as string}
                   className="rounded-lg border border-white/16 bg-white/10 p-4 backdrop-blur"

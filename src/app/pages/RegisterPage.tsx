@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authApi } from "@/api/auth";
+import { institutionsApi } from "@/api/institutions";
 import { useAuth } from "@/store/auth";
 
 const schema = z
@@ -18,9 +19,9 @@ const schema = z
     matricNumber: z.string().trim().min(3, "Matric number is required").max(64),
     password: z.string().min(8, "Use at least 8 characters").max(128),
     confirmPassword: z.string().min(1, "Please confirm your password"),
-    faculty: z.string().trim().max(100).optional().or(z.literal("")),
-    department: z.string().trim().max(100).optional().or(z.literal("")),
-    level: z.string().trim().max(20).optional().or(z.literal("")),
+    facultyId: z.string().optional(),
+    departmentId: z.string().optional(),
+    levelId: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -39,17 +40,33 @@ export function RegisterPage() {
       matricNumber: "",
       password: "",
       confirmPassword: "",
-      faculty: "",
-      department: "",
-      level: "",
+      facultyId: "",
+      departmentId: "",
+      levelId: "",
     },
+  });
+  const faculties = useQuery({
+    queryKey: ["institutions", "faculties"],
+    queryFn: institutionsApi.faculties.list,
+  });
+  const departments = useQuery({
+    queryKey: ["institutions", "departments", form.watch("facultyId")],
+    queryFn: () => institutionsApi.departments.list(form.getValues("facultyId") || undefined),
+  });
+  const levels = useQuery({
+    queryKey: ["institutions", "levels"],
+    queryFn: institutionsApi.levels.list,
   });
 
   const mutation = useMutation({
     mutationFn: authApi.studentRegister,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (res.accessToken || res.data?.accessToken || res.token) {
         setSession(res);
+        if (!res.user && !res.data?.user) {
+          const profile = await authApi.me().catch(() => null);
+          if (profile) useAuth.getState().setUser(profile);
+        }
         toast.success("Account created");
         navigate("/student", { replace: true });
       } else {
@@ -72,9 +89,9 @@ export function RegisterPage() {
             mutation.mutate({
               matricNumber: v.matricNumber,
               password: v.password,
-              faculty: v.faculty || undefined,
-              department: v.department || undefined,
-              level: v.level || undefined,
+              facultyId: v.facultyId || undefined,
+              departmentId: v.departmentId || undefined,
+              levelId: v.levelId || undefined,
             }),
           )}
         >
@@ -128,11 +145,7 @@ export function RegisterPage() {
                 aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 tabIndex={-1}
               >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {form.formState.errors.confirmPassword && (
@@ -144,20 +157,52 @@ export function RegisterPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="faculty">Faculty</Label>
-              <Input id="faculty" placeholder="Engineering" {...form.register("faculty")} />
+              <select
+                id="faculty"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                {...form.register("facultyId", {
+                  onChange: () => form.setValue("departmentId", ""),
+                })}
+              >
+                <option value="">Select faculty</option>
+                {(faculties.data ?? []).map((faculty) => (
+                  <option key={faculty.id} value={faculty.id}>
+                    {faculty.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <Input
+              <select
                 id="department"
-                placeholder="Computer Science"
-                {...form.register("department")}
-              />
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                disabled={!form.watch("facultyId")}
+                {...form.register("departmentId")}
+              >
+                <option value="">Select department</option>
+                {(departments.data ?? []).map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="level">Level</Label>
-            <Input id="level" placeholder="100L" {...form.register("level")} />
+            <select
+              id="level"
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              {...form.register("levelId")}
+            >
+              <option value="">Select level</option>
+              {(levels.data ?? []).map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
+              ))}
+            </select>
           </div>
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

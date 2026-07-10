@@ -12,9 +12,7 @@ export function StudentDashboard() {
   const user = useAuth((s) => s.user);
   const elections = useQuery({ queryKey: ["elections"], queryFn: electionsApi.list });
 
-  const active = (elections.data ?? []).filter(
-    (e) => (e.status || "").toUpperCase() === "ACTIVE",
-  );
+  const active = (elections.data ?? []).filter((e) => (e.status || "").toUpperCase() === "ONGOING");
 
   return (
     <div className="space-y-8">
@@ -32,13 +30,17 @@ export function StudentDashboard() {
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold">Active elections</h3>
           <Button asChild variant="ghost" size="sm">
-            <Link to="/student/elections">View all <ArrowRight className="ml-1 h-3 w-3" /></Link>
+            <Link to="/student/elections">
+              View all <ArrowRight className="ml-1 h-3 w-3" />
+            </Link>
           </Button>
         </div>
 
         {elections.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[0, 1].map((i) => <Skeleton key={i} className="h-32" />)}
+            {[0, 1].map((i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
           </div>
         ) : active.length === 0 ? (
           <Card>

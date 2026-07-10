@@ -1,6 +1,6 @@
 import { api } from "./axios";
-import type { CreateVoteDto } from "@/types/api";
+import type { CreateVoteDto, VoteReceipt } from "@/types/api";
 
 export const votingApi = {
-  cast: (dto: CreateVoteDto) => api.post("/api/v1/voting", dto).then((r) => r.data),
+  cast: (dto: CreateVoteDto) => api.post<VoteReceipt>("/api/v1/voting", dto).then((r) => r.data),
 };

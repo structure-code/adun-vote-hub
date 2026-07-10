@@ -32,24 +32,28 @@ import { useAuth } from "@/store/auth";
 import { authApi } from "@/api/auth";
 import { toast } from "sonner";
 
-export type NavItem = { to: string; label: string; icon: ComponentType<{ className?: string }> };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  roles?: string[];
+};
 
-export const adminNav: NavItem[] = [
+const adminNav: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/elections", label: "Elections", icon: Vote },
   { to: "/admin/positions", label: "Positions", icon: Award },
   { to: "/admin/candidates", label: "Candidates", icon: ClipboardList },
   { to: "/admin/students", label: "Students", icon: Users },
-  { to: "/admin/officers", label: "Officers", icon: UserCog },
+  { to: "/admin/officers", label: "Officers", icon: UserCog, roles: ["SUPER_ADMIN"] },
   { to: "/admin/results", label: "Results", icon: Trophy },
-  { to: "/admin/audit", label: "Audit Logs", icon: ScrollText },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/admin/audit", label: "Audit Logs", icon: ScrollText, roles: ["SUPER_ADMIN"] },
+  { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["SUPER_ADMIN"] },
 ];
 
-export const studentNav: NavItem[] = [
+const studentNav: NavItem[] = [
   { to: "/student", label: "Dashboard", icon: LayoutDashboard },
   { to: "/student/elections", label: "Elections", icon: Vote },
-  { to: "/student/history", label: "Voting History", icon: ClipboardList },
   { to: "/student/results", label: "Results", icon: Trophy },
   { to: "/student/profile", label: "Profile", icon: User },
 ];
@@ -59,6 +63,7 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
   const clear = useAuth((s) => s.clear);
+  const visibleNav = nav.filter((item) => !item.roles || item.roles.includes(user?.role ?? ""));
 
   const initials = (user?.matricNumber || user?.email || "U")
     .replace(/[^A-Za-z0-9]/g, "")
@@ -85,7 +90,7 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
         <BrandLogo />
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {nav.map((item) => (
+        {visibleNav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -153,7 +158,7 @@ export function AppShell({ nav, title }: { nav: NavItem[]; title: string }) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate(nav[0].to)}>
+              <DropdownMenuItem onClick={() => navigate(visibleNav[0]?.to ?? "/")}>
                 <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
               </DropdownMenuItem>
               <DropdownMenuItem

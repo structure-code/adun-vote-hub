@@ -10,10 +10,14 @@ import type { Election } from "@/types/api";
 
 function statusVariant(status?: string) {
   switch ((status || "").toUpperCase()) {
-    case "ACTIVE": return "default" as const;
-    case "CLOSED": return "secondary" as const;
-    case "SCHEDULED": return "outline" as const;
-    default: return "outline" as const;
+    case "ONGOING":
+      return "default" as const;
+    case "ENDED":
+      return "secondary" as const;
+    case "SCHEDULED":
+      return "outline" as const;
+    default:
+      return "outline" as const;
   }
 }
 
@@ -23,16 +27,26 @@ export function AdminDashboard() {
   const students = useQuery({ queryKey: ["students"], queryFn: studentsApi.list });
 
   const activeCount = (elections.data ?? []).filter(
-    (e) => (e.status || "").toUpperCase() === "ACTIVE",
+    (e) => (e.status || "").toUpperCase() === "ONGOING",
   ).length;
   const closedCount = (elections.data ?? []).filter(
-    (e) => (e.status || "").toUpperCase() === "CLOSED",
+    (e) => (e.status || "").toUpperCase() === "ENDED",
   ).length;
 
   const stats = [
-    { label: "Total Elections", value: elections.data?.length, icon: Vote, loading: elections.isLoading },
+    {
+      label: "Total Elections",
+      value: elections.data?.length,
+      icon: Vote,
+      loading: elections.isLoading,
+    },
     { label: "Active Elections", value: activeCount, icon: Trophy, loading: elections.isLoading },
-    { label: "Candidates", value: candidates.data?.length, icon: ClipboardList, loading: candidates.isLoading },
+    {
+      label: "Candidates",
+      value: candidates.data?.length,
+      icon: ClipboardList,
+      loading: candidates.isLoading,
+    },
     { label: "Students", value: students.data?.length, icon: Users, loading: students.isLoading },
   ];
 
@@ -40,9 +54,7 @@ export function AdminDashboard() {
     <div className="space-y-8">
       <div>
         <h2 className="font-display text-2xl font-bold sm:text-3xl">Overview</h2>
-        <p className="text-sm text-muted-foreground">
-          Live snapshot of the ADUN E-Voting system.
-        </p>
+        <p className="text-sm text-muted-foreground">Live snapshot of the ADUN E-Voting system.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -51,7 +63,9 @@ export function AdminDashboard() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground">{s.label}</div>
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                    {s.label}
+                  </div>
                   {s.loading ? (
                     <Skeleton className="mt-2 h-8 w-16" />
                   ) : (
@@ -76,7 +90,9 @@ export function AdminDashboard() {
         <CardContent>
           {elections.isLoading ? (
             <div className="space-y-3">
-              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
             </div>
           ) : (elections.data ?? []).length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
@@ -85,11 +101,15 @@ export function AdminDashboard() {
           ) : (
             <ul className="divide-y">
               {(elections.data ?? []).slice(0, 6).map((e: Election) => (
-                <li key={e.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3">
+                <li
+                  key={e.id}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"
+                >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{e.title}</div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {new Date(e.startDate).toLocaleDateString()} — {new Date(e.endDate).toLocaleDateString()}
+                      {new Date(e.startDate).toLocaleDateString()} —{" "}
+                      {new Date(e.endDate).toLocaleDateString()}
                     </div>
                   </div>
                   <Badge variant={statusVariant(e.status)}>{e.status || "DRAFT"}</Badge>
