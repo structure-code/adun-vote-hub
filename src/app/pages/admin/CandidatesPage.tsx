@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { candidatesApi } from "@/api/candidates";
 import { positionsApi } from "@/api/positions";
 import { studentsApi } from "@/api/students";
-import type { User } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,15 +21,28 @@ export function CandidatesPage() {
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CandidateForm>(blank);
+  
+  // Queries
   const candidates = useQuery({ queryKey: ["candidates"], queryFn: candidatesApi.list });
   const positions = useQuery({ queryKey: ["positions"], queryFn: () => positionsApi.list() });
   const students = useQuery({ queryKey: ["students"], queryFn: studentsApi.list });
+  
+  // Lookup map for Position Titles
   const positionNames = new Map(
     (positions.data ?? []).map((position) => [position.id, position.title]),
   );
 
-  const studentOptions = (students.data ?? []) as Array<User & { userId?: string }>;
+  // Lookup map to associate a userId with their matricNumber from the nested student data
+  const studentOptions = (students.data ?? []) as Array<any>;
+  const studentMatricNumbers = new Map(
+    studentOptions.map((student) => {
+      const targetId = student.userId || student.id;
+      const displayValue = student.user?.matricNumber || student.user?.email || targetId;
+      return [targetId, displayValue];
+    })
+  );
 
+  // Mutations
   const create = useMutation({
     mutationFn: () => candidatesApi.create(form),
     onSuccess: () => {
@@ -40,6 +52,7 @@ export function CandidatesPage() {
       setForm(blank);
     },
   });
+
   const approve = useMutation({
     mutationFn: ({ id, isApproved }: { id: string; isApproved: boolean }) =>
       candidatesApi.update(id, { isApproved }),
@@ -48,6 +61,7 @@ export function CandidatesPage() {
       toast.success("Candidate status updated");
     },
   });
+
   const remove = useMutation({
     mutationFn: candidatesApi.remove,
     onSuccess: () => {
@@ -70,6 +84,7 @@ export function CandidatesPage() {
           Add candidate
         </Button>
       </div>
+
       {candidates.isLoading ? (
         <Skeleton className="h-52" />
       ) : (candidates.data ?? []).length === 0 ? (
@@ -97,8 +112,13 @@ export function CandidatesPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">
+                      {/* Priority Checklist: 
+                          1. Direct candidate user data 
+                          2. Map-matched matric number from students list 
+                          3. fallback text */}
                       {candidate.user?.matricNumber ||
                         candidate.user?.email ||
+                        studentMatricNumbers.get(candidate.userId) ||
                         candidate.userId ||
                         "Candidate"}
                     </div>
@@ -148,6 +168,7 @@ export function CandidatesPage() {
           ))}
         </div>
       )}
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
@@ -174,7 +195,7 @@ export function CandidatesPage() {
                   const optionValue = student.userId ?? student.id;
                   return (
                     <option key={optionValue} value={optionValue}>
-                      {student.matricNumber || student.email || student.id}
+                      {student.user?.matricNumber || student.user?.email || student.id}
                     </option>
                   );
                 })}
