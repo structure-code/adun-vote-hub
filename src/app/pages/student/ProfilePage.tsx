@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { User } from "@/types/api";
 
 type AcademicForm = { facultyId: string; departmentId: string; levelId: string };
 const emptyForm: AcademicForm = { facultyId: "", departmentId: "", levelId: "" };
@@ -26,27 +27,33 @@ export function ProfilePage() {
   const client = useQueryClient();
   const setUser = useAuth((state) => state.setUser);
   const [form, setForm] = useState<AcademicForm>(emptyForm);
+  
   const profile = useQuery({ queryKey: ["profile"], queryFn: authApi.me });
+  
   const faculties = useQuery({
     queryKey: ["institutions", "faculties"],
     queryFn: institutionsApi.faculties.list,
   });
+  
   const departments = useQuery({
     queryKey: ["institutions", "departments", form.facultyId],
     queryFn: () => institutionsApi.departments.list(form.facultyId),
     enabled: !!form.facultyId,
   });
+  
   const levels = useQuery({
     queryKey: ["institutions", "levels"],
     queryFn: institutionsApi.levels.list,
   });
 
+  // Populate form tracking the nested studentProfile object
   useEffect(() => {
-    if (!profile.data) return;
+    if (!profile.data?.studentProfile) return;
+    const sp = profile.data.studentProfile;
     setForm({
-      facultyId: profile.data.facultyId ?? "",
-      departmentId: profile.data.departmentId ?? "",
-      levelId: profile.data.levelId ?? "",
+      facultyId: sp.facultyId ?? "",
+      departmentId: sp.departmentId ?? "",
+      levelId: sp.levelId ?? "",
     });
   }, [profile.data]);
 
@@ -58,35 +65,59 @@ export function ProfilePage() {
         levelId: form.levelId || undefined,
       }),
     onSuccess: (updatedUser) => {
-      const mergedUser = {
-        ...profile.data!,
-        ...updatedUser,
-        facultyId: updatedUser?.facultyId ?? form.facultyId,
-        departmentId: updatedUser?.departmentId ?? form.departmentId,
-        levelId: updatedUser?.levelId ?? form.levelId,
-      };
-      client.setQueryData(["profile"], mergedUser);
-      setUser(mergedUser);
-      toast.success("Student profile updated");
+  const currentData = profile.data!;
+  
+  // Explicitly type it as your 'User' interface
+  const mergedUser: User = {
+    ...currentData,
+    ...updatedUser,
+    studentProfile: {
+      ...(currentData.studentProfile || {}),
+      ...(updatedUser?.studentProfile || {}),
+      // Use 'as string' or fallback to ensure it matches your interface strings
+      facultyId: updatedUser?.studentProfile?.facultyId ?? form.facultyId,
+      departmentId: updatedUser?.studentProfile?.departmentId ?? form.departmentId,
+      levelId: updatedUser?.studentProfile?.levelId ?? form.levelId,
+      // Carry over structural fields from old state if updatedUser lacks them
+      id: currentData.studentProfile?.id ?? "",
+      userId: currentData.id,
+      isActive: updatedUser?.studentProfile?.isActive ?? currentData.studentProfile?.isActive ?? true,
+      isVerified: updatedUser?.studentProfile?.isVerified ?? currentData.studentProfile?.isVerified ?? false,
     },
+  };
+
+  client.setQueryData(["profile"], mergedUser);
+  setUser(mergedUser);
+  toast.success("Student profile updated");
+},
   });
 
   if (profile.isLoading) return <Skeleton className="h-64" />;
+  
   const user = profile.data;
+  const studentProfile = user?.studentProfile;
+
   const institutionName = (value: { name?: string } | string | undefined, fallback?: string) =>
     typeof value === "string" ? value : value?.name || fallback;
+
   const rows = [
     ["Matric number", user?.matricNumber],
     ["Email", user?.email],
     ["Role", user?.role],
-    ["Faculty", institutionName(user?.faculty, user?.facultyRecord?.name || user?.facultyId)],
+    [
+      "Faculty", 
+      institutionName(studentProfile?.faculty, studentProfile?.facultyRecord?.name || studentProfile?.facultyId)
+    ],
     [
       "Department",
-      institutionName(user?.department, user?.departmentRecord?.name || user?.departmentId),
+      institutionName(studentProfile?.department, studentProfile?.departmentRecord?.name || studentProfile?.departmentId),
     ],
-    ["Level", institutionName(user?.level, user?.levelRecord?.name || user?.levelId)],
-    ["Account active", user?.isActive === false ? "No" : "Yes"],
-    ["Verified", user?.isVerified ? "Yes" : "No"],
+    [
+      "Level", 
+      institutionName(studentProfile?.level, studentProfile?.levelRecord?.name || studentProfile?.levelId)
+    ],
+    ["Account active", studentProfile?.isActive === false ? "No" : "Yes"],
+    ["Verified", studentProfile?.isVerified ? "Yes" : "No"],
   ];
 
   return (
@@ -107,7 +138,7 @@ export function ProfilePage() {
             {rows.map(([label, value]) => (
               <div key={label} className="grid grid-cols-[9rem_minmax(0,1fr)] gap-3 py-3 text-sm">
                 <span className="text-muted-foreground">{label}</span>
-                <span className="break-words font-medium">{value || "Not set"}</span>
+                <span className="wrap-break-word font-medium">{value || "Not set"}</span>
               </div>
             ))}
           </CardContent>

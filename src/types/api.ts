@@ -9,35 +9,53 @@ export interface InstitutionBase {
   updatedAt?: string;
 }
 
-export interface Faculty extends InstitutionBase {
-  departments?: Department[];
-}
-
-export interface Department extends InstitutionBase {
-  facultyId: string;
-  faculty?: Faculty;
-}
 
 export type Level = InstitutionBase;
 
-export interface User {
+
+export interface Faculty {
   id: string;
-  email?: string;
-  matricNumber?: string;
-  role: Role;
-  facultyId?: string;
-  departmentId?: string;
-  levelId?: string;
-  faculty?: Faculty | string;
-  department?: Department | string;
-  level?: Level | string;
-  facultyRecord?: Faculty;
-  departmentRecord?: Department;
-  levelRecord?: Level;
-  isActive?: boolean;
-  isVerified?: boolean;
+  name: string;
+  description?: string | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  description?: string | null;
+  facultyId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+
+export interface StudentProfile {
+  id: string;
+  userId: string;
+  facultyId: string;
+  departmentId: string;
+  levelId: string;
+  isActive: boolean;
+  isVerified: boolean;
+  faculty?: Faculty;
+  department?: Department;
+  level?: Level;
+  facultyRecord?: Faculty;       // Kept if your backend uses this fallback alias
+  departmentRecord?: Department; // Kept if your backend uses this fallback alias
+  levelRecord?: Level;           // Kept if your backend uses this fallback alias
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface User {
+  id: string;
+  email: string | null;
+  matricNumber: string;
+  role: Role | string;
+  createdAt: string;
+  studentProfile?: StudentProfile; // The crucial nested object from your API response
 }
 
 export interface AuthResponse {
