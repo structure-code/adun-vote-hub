@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { GraduationCap, Loader2, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,8 @@ export function LoginPage({ mode }: { mode: LoginMode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const setSession = useAuth((s) => s.setSession);
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
 
@@ -101,12 +104,28 @@ export function LoginPage({ mode }: { mode: LoginMode }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-password">Password</Label>
-              <Input
-                id="s-password"
-                type="password"
-                autoComplete="current-password"
-                {...studentForm.register("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="s-password"
+                  type={showStudentPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  {...studentForm.register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowStudentPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  aria-label={showStudentPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showStudentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {studentForm.formState.errors.password && (
                 <p className="text-xs text-destructive">
                   {studentForm.formState.errors.password.message}
@@ -146,12 +165,28 @@ export function LoginPage({ mode }: { mode: LoginMode }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="a-password">Password</Label>
-              <Input
-                id="a-password"
-                type="password"
-                autoComplete="current-password"
-                {...adminForm.register("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="a-password"
+                  type={showAdminPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  {...adminForm.register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  aria-label={showAdminPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showAdminPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {adminForm.formState.errors.password && (
                 <p className="text-xs text-destructive">
                   {adminForm.formState.errors.password.message}

@@ -17,7 +17,7 @@ export function BrandLogo({
         alt="Admiralty University of Nigeria"
         width={size}
         height={size}
-        className="shrink-0 object-contain"
+        className="shrink-0 object-contain bg-white"
         style={{ height: size, width: size }}
       />
       {showText && (
