@@ -183,7 +183,8 @@ export function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="profile-faculty">Faculty</Label>
                 <Select
-                  value={form.facultyId || ""}
+                  key={faculties.isLoading ? "loading" : form.facultyId}
+                  value={form.facultyId || undefined}
                   onValueChange={(facultyId) => setForm({ ...form, facultyId, departmentId: "" })}
                   disabled={faculties.isLoading}
                 >
@@ -203,7 +204,8 @@ export function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="profile-department">Department</Label>
                 <Select
-                  value={form.departmentId || ""}
+                  key={departments.isLoading ? "loading" : form.departmentId}
+                  value={form.departmentId || undefined}
                   onValueChange={(departmentId) => setForm({ ...form, departmentId })}
                   disabled={!form.facultyId || departments.isLoading}
                 >
@@ -225,7 +227,8 @@ export function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="profile-level">Level</Label>
                 <Select
-                  value={form.levelId || ""}
+                  key={levels.isLoading ? "loading" : form.levelId}
+                  value={form.levelId || undefined}
                   onValueChange={(levelId) => setForm({ ...form, levelId })}
                   disabled={levels.isLoading}
                 >
