@@ -140,7 +140,7 @@ export function CandidatesPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">
-                      {candidate.user?.matricNumber || "Matric number unavailable"}
+                      {candidate.user?.studentProfile?.name} ({candidate?.user?.studentProfile?.nickname})
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {candidate.position?.title ||
