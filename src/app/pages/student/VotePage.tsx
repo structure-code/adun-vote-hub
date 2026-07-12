@@ -96,7 +96,7 @@ export function VotePage() {
                       )}
                       <div className="min-w-0">
                         <div className="truncate font-medium">
-                          {candidate.user?.matricNumber || candidate.user?.email || "Candidate"}
+                          {candidate.user?.studentProfile?.name} ({candidate?.user?.studentProfile?.nickname})
                         </div>
                         <div className="line-clamp-2 text-xs text-muted-foreground">
                           {candidate.manifesto || "No manifesto"}

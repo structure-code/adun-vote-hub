@@ -40,6 +40,8 @@ export interface StudentProfile {
   department?: Department;
   level?: Level;
   user?: User;
+  name?: string; // Kept if your backend uses this fallback alias
+  nickname?: string; // Kept if your backend uses this fallback alias
   facultyRecord?: Faculty; // Kept if your backend uses this fallback alias
   departmentRecord?: Department; // Kept if your backend uses this fallback alias
   levelRecord?: Level; // Kept if your backend uses this fallback alias
