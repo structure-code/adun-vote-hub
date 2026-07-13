@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { BarChart3, Trophy } from "lucide-react";
 import { electionsApi } from "@/api/elections";
 import { resultsApi } from "@/api/results";
-import type { VoteResult } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -32,15 +31,11 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
     refetchInterval: audience === "admin" ? 15_000 : false,
   });
 
-  const rows: VoteResult[] = results.data?.results ?? [];
-  const grouped = rows.reduce<Record<string, VoteResult[]>>((acc, row) => {
-    const key = row.positionTitle || row.positionId || "Results";
-    (acc[key] ??= []).push(row);
-    return acc;
-  }, {});
+  // 1. Target the nested results array safely
+  const positions = results.data?.results ?? [];
 
-  // Compute total votes across all positions (sum of all candidate votes)
-  const totalVotesComputed = rows.reduce((sum, row) => sum + row.totalVotes, 0);
+  // 2. Calculate the global total votes by summing unique position votes (or fallback to manual calculation)
+  const totalVotesCounted = results.data?.totalVotes ?? positions.reduce((sum, pos) => sum + (pos.totalVotes || 0), 0);
 
   const electionTitle =
     results.data?.electionTitle || elections.data?.find((e) => e.id === electionId)?.title;
@@ -60,7 +55,6 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
 
       <Card>
         <CardContent className="p-4">
-          {/* Stacked Container */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="result-election">Election</Label>
             <Select
@@ -91,7 +85,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
             Results are not available for this election.
           </CardContent>
         </Card>
-      ) : rows.length === 0 ? (
+      ) : positions.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center py-14 text-center text-sm text-muted-foreground">
             <BarChart3 className="mb-3 h-7 w-7" />
@@ -107,7 +101,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
                   Total votes
                 </div>
                 <div className="mt-1 font-display text-3xl font-bold">
-                  {results.data?.totalVotes ?? totalVotesComputed}
+                  {totalVotesCounted}
                 </div>
               </CardContent>
             </Card>
@@ -117,7 +111,7 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
                   Positions reported
                 </div>
                 <div className="mt-1 font-display text-3xl font-bold">
-                  {Object.keys(grouped).length}
+                  {positions.length}
                 </div>
               </CardContent>
             </Card>
@@ -133,36 +127,50 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
           ) : null}
 
           <div className="flex flex-col gap-4">
-            {Object.entries(grouped).map(([position, candidates]) => {
-              const max = Math.max(...candidates.map((candidate) => candidate.votes));
+            {/* 3. Map directly over the positions array provided by backend */}
+            {positions.map((positionGroup) => {
+              const candidatesList = positionGroup.candidates ?? [];
+              
+              // Find the highest vote count to correctly calibrate the progress bar max-values
+              const maxVotes = Math.max(...candidatesList.map((c) => c.voteCount || 0), 0);
+
               return (
-                <Card key={position}>
+                <Card key={positionGroup.positionId}>
                   <CardHeader>
-                    <CardTitle className="text-lg">{position}</CardTitle>
+                    <CardTitle className="text-lg">{positionGroup.positionTitle}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-5">
-                    {candidates
-                      .sort((a, b) => b.votes - a.votes)
-                      .map((candidate) => (
-                        <div key={candidate.candidateId}>
-                          <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                            <span className="flex min-w-0 items-center gap-2 font-medium">
-                              {candidate.votes === max && (
-                                <Trophy className="h-4 w-4 text-accent" />
-                              )}
-                              <span className="truncate">
-                                {candidate.candidateName || candidate.candidateId}
+                    {candidatesList
+                      .sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0))
+                      .map((candidate) => {
+                        // Safely pull the user objects from backend response
+                        const displayName = candidate.user?.name || "Unknown Candidate";
+                        const nickname = candidate.user?.nickname ? `"${candidate.user.nickname}"` : "";
+
+                        return (
+                          <div key={candidate.id}>
+                            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                              <span className="flex min-w-0 items-center gap-2 font-medium">
+                                {/* Highlight winner or top vote getter */}
+                                {(candidate.isWinner || (candidate.voteCount === maxVotes && maxVotes > 0)) && (
+                                  <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+                                )}
+                                <span className="truncate">
+                                  {displayName} {nickname && <span className="text-xs text-muted-foreground font-normal">{nickname}</span>}
+                                </span>
                               </span>
-                            </span>
-                            <Badge variant="outline">{candidate.votes} votes</Badge>
+                              <Badge variant="outline">{candidate.voteCount} votes</Badge>
+                            </div>
+                            <Progress
+                              value={
+                                positionGroup.totalVotes 
+                                  ? ((candidate.voteCount || 0) / positionGroup.totalVotes) * 100 
+                                  : 0
+                              }
+                            />
                           </div>
-                          <Progress
-                            value={
-                              candidate.percentage ?? (max ? (candidate.votes / max) * 100 : 0)
-                            }
-                          />
-                        </div>
-                      ))}
+                        );
+                      })}
                   </CardContent>
                 </Card>
               );
