@@ -266,6 +266,7 @@ export function StudentsPage() {
                 {displayedStudents.map((student) => {
                   const status = profileStatus(student);
                   const idCardUrl = studentIdCardUrl(student);
+                  const canApproveId = Boolean(idCardUrl);
 
                   return (
                     <tr key={student.id}>
@@ -306,8 +307,15 @@ export function StudentsPage() {
                             <Button
                               size="sm"
                               variant="secondary"
-                              disabled={verifyStudent.isPending}
-                              onClick={() => verifyStudent.mutate(student.id)}
+                              disabled={verifyStudent.isPending || !canApproveId}
+                              title={
+                                canApproveId
+                                  ? "Approve uploaded student ID"
+                                  : "Student ID has not been uploaded"
+                              }
+                              onClick={() => {
+                                if (canApproveId) verifyStudent.mutate(student.id);
+                              }}
                             >
                               {verifyStudent.isPending ? (
                                 <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -388,6 +396,8 @@ export function StudentsPage() {
                   <div className="text-xs text-muted-foreground">
                     {form.isVerified
                       ? "This student's ID has been approved."
+                      : selectedIdCardUrl
+                        ? "Approve the uploaded ID to verify this student."
                       : "Approve the uploaded ID to verify this student."}
                   </div>
                 </div>
@@ -404,8 +414,15 @@ export function StudentsPage() {
                     <Button
                       type="button"
                       size="sm"
-                      disabled={verifyStudent.isPending}
-                      onClick={() => verifyStudent.mutate(selectedId)}
+                      disabled={verifyStudent.isPending || !selectedIdCardUrl}
+                      title={
+                        selectedIdCardUrl
+                          ? "Approve uploaded student ID"
+                          : "Student ID has not been uploaded"
+                      }
+                      onClick={() => {
+                        if (selectedIdCardUrl) verifyStudent.mutate(selectedId);
+                      }}
                     >
                       {verifyStudent.isPending ? (
                         <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -508,6 +525,7 @@ export function StudentsPage() {
                 <Switch
                   id="verified"
                   checked={form.isVerified ?? false}
+                  disabled={!form.isVerified && !selectedIdCardUrl}
                   onCheckedChange={(checked) => setForm({ ...form, isVerified: checked })}
                 />
               </div>
