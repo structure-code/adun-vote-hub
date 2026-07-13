@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileSpreadsheet, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  FileSpreadsheet,
+  Loader2,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { institutionsApi } from "@/api/institutions";
 import { studentsApi } from "@/api/students";
 import { usersApi } from "@/api/users";
 import { useAuth } from "@/store/auth";
+import { studentIdCardUrl } from "@/lib/student-id-card";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import type { StudentRecord, UpdateStudentProfileDto } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +106,25 @@ export function StudentsPage() {
     mutationFn: studentsApi.search,
     onSuccess: setSearchedStudent,
   });
+  const verifyStudent = useMutation({
+    mutationFn: studentsApi.verify,
+    onSuccess: (_updated, studentId) => {
+      client.invalidateQueries({ queryKey: ["students"] });
+      client.invalidateQueries({ queryKey: ["students", studentId] });
+      setForm((current) => ({ ...current, isVerified: true }));
+      setSearchedStudent((current) => {
+        if (!current || current.id !== studentId) return current;
+        return {
+          ...current,
+          isVerified: true,
+          studentProfile: current.studentProfile
+            ? { ...current.studentProfile, isVerified: true }
+            : current.studentProfile,
+        };
+      });
+      toast.success("Student ID approved");
+    },
+  });
   const deleteUser = useMutation({
     mutationFn: usersApi.remove,
     onSuccess: () => {
@@ -104,6 +134,7 @@ export function StudentsPage() {
     },
   });
   const displayedStudents = searchedStudent ? [searchedStudent] : (students.data ?? []);
+  const selectedIdCardUrl = studentIdCardUrl(selected.data);
 
   function label(student: StudentRecord) {
     return (
@@ -232,65 +263,100 @@ export function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {displayedStudents.map((student) => (
-                  <tr key={student.id}>
-                    <td className="p-4">
-                      <div className="font-medium">{label(student)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {departmentName(student) || "Department not set"}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge
-                        variant={
-                          profileStatus(student).isActive === false ? "destructive" : "outline"
-                        }
-                      >
-                        {profileStatus(student).isActive === false ? "Inactive" : "Active"}
-                      </Badge>
-                    </td>
-                    <td className="p-4">{profileStatus(student).isVerified ? "Yes" : "No"}</td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedId(student.id)}
+                {displayedStudents.map((student) => {
+                  const status = profileStatus(student);
+                  const idCardUrl = studentIdCardUrl(student);
+
+                  return (
+                    <tr key={student.id}>
+                      <td className="p-4">
+                        <div className="font-medium">{label(student)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {departmentName(student) || "Department not set"}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant={status.isActive === false ? "destructive" : "outline"}
+                          className={
+                            status.isActive === false ? undefined : positiveStatusBadgeClass
+                          }
                         >
-                          <Pencil className="mr-2 h-3.5 w-3.5" />
-                          Manage
-                        </Button>
-                        {canDeleteUsers && userId(student) !== currentUser?.id && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="destructive">
-                                <Trash2 className="h-3.5 w-3.5" />
-                                <span className="sr-only">Delete {label(student)}</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete {label(student)}?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This permanently removes the user account and cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteUser.mutate(userId(student))}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete user
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {status.isActive === false ? "Inactive" : "Active"}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        {status.isVerified ? (
+                          <Badge className={positiveStatusBadgeClass}>Verified</Badge>
+                        ) : (
+                          <Badge variant="secondary">Pending</Badge>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {idCardUrl && (
+                            <Button asChild size="sm" variant="outline">
+                              <a href={idCardUrl} target="_blank" rel="noreferrer">
+                                <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                                ID
+                              </a>
+                            </Button>
+                          )}
+                          {!status.isVerified && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={verifyStudent.isPending}
+                              onClick={() => verifyStudent.mutate(student.id)}
+                            >
+                              {verifyStudent.isPending ? (
+                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
+                              )}
+                              Approve ID
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedId(student.id)}
+                          >
+                            <Pencil className="mr-2 h-3.5 w-3.5" />
+                            Manage
+                          </Button>
+                          {canDeleteUsers && userId(student) !== currentUser?.id && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <span className="sr-only">Delete {label(student)}</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete {label(student)}?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This permanently removes the user account and cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteUser.mutate(userId(student))}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete user
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </CardContent>
@@ -316,6 +382,41 @@ export function StudentsPage() {
                 update.mutate();
               }}
             >
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
+                <div>
+                  <div className="text-sm font-medium">Student ID approval</div>
+                  <div className="text-xs text-muted-foreground">
+                    {form.isVerified
+                      ? "This student's ID has been approved."
+                      : "Approve the uploaded ID to verify this student."}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedIdCardUrl && (
+                    <Button asChild type="button" variant="outline" size="sm">
+                      <a href={selectedIdCardUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                        View ID
+                      </a>
+                    </Button>
+                  )}
+                  {!form.isVerified && selectedId && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={verifyStudent.isPending}
+                      onClick={() => verifyStudent.mutate(selectedId)}
+                    >
+                      {verifyStudent.isPending ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
+                      )}
+                      Approve ID
+                    </Button>
+                  )}
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="student-faculty">Faculty</Label>
                 <Select

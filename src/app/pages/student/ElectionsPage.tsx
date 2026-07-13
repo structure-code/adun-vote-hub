@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { CalendarDays, Vote } from "lucide-react";
 import { electionsApi } from "@/api/elections";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +38,12 @@ export function StudentElectionsPage() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-display font-semibold">{election.title}</h3>
-                    <Badge variant={ongoing ? "default" : "outline"}>{election.status}</Badge>
+                    <Badge
+                      variant={ongoing ? "default" : "outline"}
+                      className={ongoing ? positiveStatusBadgeClass : undefined}
+                    >
+                      {election.status}
+                    </Badge>
                   </div>
                   <div className="mt-4 space-y-2 text-xs text-muted-foreground">
                     <div className="flex gap-2">

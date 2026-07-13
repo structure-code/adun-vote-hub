@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { electionsApi } from "@/api/elections";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import type { CreateElectionDto, Election } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,10 @@ function toInputDate(value?: string) {
   const date = new Date(value);
   const offset = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function electionStatusClass(status?: string) {
+  return (status || "").toUpperCase() === "ONGOING" ? positiveStatusBadgeClass : undefined;
 }
 
 export function ElectionsPage() {
@@ -186,7 +191,9 @@ export function ElectionsPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display font-semibold">{election.title}</h3>
-                    <Badge variant="outline">{election.status}</Badge>
+                    <Badge variant="outline" className={electionStatusClass(election.status)}>
+                      {election.status}
+                    </Badge>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarDays className="h-3.5 w-3.5" />

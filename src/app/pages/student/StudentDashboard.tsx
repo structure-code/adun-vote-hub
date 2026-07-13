@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { electionsApi } from "@/api/elections";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import { useAuth } from "@/store/auth";
 
 export function StudentDashboard() {
@@ -56,7 +57,7 @@ export function StudentDashboard() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="font-display text-base">{e.title}</CardTitle>
-                    <Badge>{e.status}</Badge>
+                    <Badge className={positiveStatusBadgeClass}>{e.status}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">

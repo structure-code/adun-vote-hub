@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { electionsApi } from "@/api/elections";
 import { candidatesApi } from "@/api/candidates";
 import { studentsApi } from "@/api/students";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import type { Election } from "@/types/api";
 
 function statusVariant(status?: string) {
@@ -19,6 +20,10 @@ function statusVariant(status?: string) {
     default:
       return "outline" as const;
   }
+}
+
+function statusClassName(status?: string) {
+  return (status || "").toUpperCase() === "ONGOING" ? positiveStatusBadgeClass : undefined;
 }
 
 export function AdminDashboard() {
@@ -112,7 +117,9 @@ export function AdminDashboard() {
                       {new Date(e.endDate).toLocaleDateString()}
                     </div>
                   </div>
-                  <Badge variant={statusVariant(e.status)}>{e.status || "DRAFT"}</Badge>
+                  <Badge variant={statusVariant(e.status)} className={statusClassName(e.status)}>
+                    {e.status || "DRAFT"}
+                  </Badge>
                 </li>
               ))}
             </ul>

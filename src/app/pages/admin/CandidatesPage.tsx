@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { candidatesApi } from "@/api/candidates";
 import { positionsApi } from "@/api/positions";
 import { studentsApi } from "@/api/students";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import type { StudentRecord } from "@/types/api";
 import {
   AlertDialog,
@@ -140,7 +141,8 @@ export function CandidatesPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">
-                      {candidate.user?.studentProfile?.name} ({candidate?.user?.studentProfile?.nickname})
+                      {candidate.user?.studentProfile?.name} (
+                      {candidate?.user?.studentProfile?.nickname})
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {candidate.position?.title ||
@@ -148,7 +150,10 @@ export function CandidatesPage() {
                         "Position unavailable"}
                     </div>
                   </div>
-                  <Badge variant={candidate.isApproved ? "default" : "outline"}>
+                  <Badge
+                    variant={candidate.isApproved ? "default" : "outline"}
+                    className={candidate.isApproved ? positiveStatusBadgeClass : undefined}
+                  >
                     {candidate.isApproved ? "Approved" : "Pending"}
                   </Badge>
                 </div>

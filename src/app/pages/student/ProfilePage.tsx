@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { ExternalLink, IdCard, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AccountSettings } from "@/app/components/AccountSettings";
 import { authApi } from "@/api/auth";
 import { institutionsApi } from "@/api/institutions";
 import { studentsApi } from "@/api/students";
 import { useAuth } from "@/store/auth";
+import { studentIdCardUrl } from "@/lib/student-id-card";
+import { positiveStatusBadgeClass } from "@/lib/status-badges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,20 +31,21 @@ export function ProfilePage() {
   const client = useQueryClient();
   const setUser = useAuth((state) => state.setUser);
   const [form, setForm] = useState<AcademicForm>(emptyForm);
-  
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+
   const profile = useQuery({ queryKey: ["profile"], queryFn: authApi.me });
-  
+
   const faculties = useQuery({
     queryKey: ["institutions", "faculties"],
     queryFn: institutionsApi.faculties.list,
   });
-  
+
   const departments = useQuery({
     queryKey: ["institutions", "departments", form.facultyId],
     queryFn: () => institutionsApi.departments.list(form.facultyId),
     enabled: !!form.facultyId,
   });
-  
+
   const levels = useQuery({
     queryKey: ["institutions", "levels"],
     queryFn: institutionsApi.levels.list,
@@ -66,7 +70,7 @@ export function ProfilePage() {
       }),
     onSuccess: (updatedUser) => {
       const currentData = profile.data!;
-      
+
       const mergedUser: User = {
         ...currentData,
         ...updatedUser,
@@ -78,8 +82,12 @@ export function ProfilePage() {
           levelId: updatedUser?.studentProfile?.levelId ?? form.levelId,
           id: currentData.studentProfile?.id ?? "",
           userId: currentData.id,
-          isActive: updatedUser?.studentProfile?.isActive ?? currentData.studentProfile?.isActive ?? true,
-          isVerified: updatedUser?.studentProfile?.isVerified ?? currentData.studentProfile?.isVerified ?? false,
+          isActive:
+            updatedUser?.studentProfile?.isActive ?? currentData.studentProfile?.isActive ?? true,
+          isVerified:
+            updatedUser?.studentProfile?.isVerified ??
+            currentData.studentProfile?.isVerified ??
+            false,
         },
       };
 
@@ -89,51 +97,95 @@ export function ProfilePage() {
     },
   });
 
+  const uploadIdCard = useMutation({
+    mutationFn: studentsApi.uploadIdCard,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["profile"] });
+      setIdCardFile(null);
+      toast.success("Student ID uploaded for verification");
+    },
+  });
+
   if (profile.isLoading) return <Skeleton className="h-64" />;
-  
+
   const user = profile.data;
   const studentProfile = user?.studentProfile;
+  const idCardUrl = studentIdCardUrl(studentProfile);
 
   const institutionName = (value: { name?: string } | string | undefined, fallback?: string) =>
     typeof value === "string" ? value : value?.name || fallback;
 
-  const currentLevelName = institutionName(studentProfile?.level, studentProfile?.levelRecord?.name);
+  const currentLevelName = institutionName(
+    studentProfile?.level,
+    studentProfile?.levelRecord?.name,
+  );
 
   const rows = [
-    ["Matric number", <span className="font-medium" key="matric">{user?.matricNumber || "Not set"}</span>],
-    ["Email", <span className="font-medium" key="email">{user?.email || "Not set"}</span>],
-    ["Role", <span className="font-medium" key="role">{user?.role}</span>],
     [
-      "Faculty", 
+      "Matric number",
+      <span className="font-medium" key="matric">
+        {user?.matricNumber || "Not set"}
+      </span>,
+    ],
+    [
+      "Email",
+      <span className="font-medium" key="email">
+        {user?.email || "Not set"}
+      </span>,
+    ],
+    [
+      "Role",
+      <span className="font-medium" key="role">
+        {user?.role}
+      </span>,
+    ],
+    [
+      "Faculty",
       <span className="font-medium" key="faculty">
-        {institutionName(studentProfile?.faculty, studentProfile?.facultyRecord?.name || studentProfile?.facultyId) || "Not set"}
-      </span>
+        {institutionName(
+          studentProfile?.faculty,
+          studentProfile?.facultyRecord?.name || studentProfile?.facultyId,
+        ) || "Not set"}
+      </span>,
     ],
     [
       "Department",
       <span className="font-medium" key="dept">
-        {institutionName(studentProfile?.department, studentProfile?.departmentRecord?.name || studentProfile?.departmentId) || "Not set"}
+        {institutionName(
+          studentProfile?.department,
+          studentProfile?.departmentRecord?.name || studentProfile?.departmentId,
+        ) || "Not set"}
       </span>,
     ],
     [
-      "Level", 
-      <span className="font-medium" key="level">{currentLevelName || "Not set"}</span>
+      "Level",
+      <span className="font-medium" key="level">
+        {currentLevelName || "Not set"}
+      </span>,
     ],
     [
-      "Account active", 
+      "Account active",
       studentProfile?.isActive !== false ? (
-        <Badge key="active" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-transparent shadow-none">Active</Badge>
+        <Badge key="active" className={positiveStatusBadgeClass}>
+          Active
+        </Badge>
       ) : (
-        <Badge key="inactive" variant="destructive">Inactive</Badge>
-      )
+        <Badge key="inactive" variant="destructive">
+          Inactive
+        </Badge>
+      ),
     ],
     [
-      "Verified", 
+      "Verified",
       studentProfile?.isVerified ? (
-        <Badge key="verified" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-transparent shadow-none">Verified</Badge>
+        <Badge key="verified" className={positiveStatusBadgeClass}>
+          Verified
+        </Badge>
       ) : (
-        <Badge key="unverified" variant="secondary">Unverified</Badge>
-      )
+        <Badge key="unverified" variant="secondary">
+          Unverified
+        </Badge>
+      ),
     ],
   ];
 
@@ -153,7 +205,10 @@ export function ProfilePage() {
           </CardHeader>
           <CardContent className="divide-y">
             {rows.map(([label, value]) => (
-              <div key={label as string} className="grid grid-cols-[9rem_minmax(0,1fr)] gap-3 py-3 text-sm items-center">
+              <div
+                key={label as string}
+                className="grid grid-cols-[9rem_minmax(0,1fr)] gap-3 py-3 text-sm items-center"
+              >
                 <span className="text-muted-foreground">{label}</span>
                 <div className="wrap-break-word">{value}</div>
               </div>
@@ -251,6 +306,62 @@ export function ProfilePage() {
                 )}
                 Save academic profile
               </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between gap-2 text-lg">
+              <span className="inline-flex items-center gap-2">
+                <IdCard className="h-5 w-5 text-primary" />
+                Student ID verification
+              </span>
+              {studentProfile?.isVerified ? (
+                <Badge className={positiveStatusBadgeClass}>Verified</Badge>
+              ) : (
+                <Badge variant="secondary">Pending</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (idCardFile) uploadIdCard.mutate(idCardFile);
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="student-id-card">Upload student ID card</Label>
+                <Input
+                  id="student-id-card"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(event) => setIdCardFile(event.target.files?.[0] ?? null)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Upload a clear image or PDF of your student ID for admin approval.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={!idCardFile || uploadIdCard.isPending}>
+                  {uploadIdCard.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  Upload ID
+                </Button>
+                {idCardUrl && (
+                  <Button asChild type="button" variant="outline">
+                    <a href={idCardUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View uploaded ID
+                    </a>
+                  </Button>
+                )}
+              </div>
             </form>
           </CardContent>
         </Card>

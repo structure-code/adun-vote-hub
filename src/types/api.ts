@@ -36,6 +36,11 @@ export interface StudentProfile {
   levelId: string;
   isActive: boolean;
   isVerified: boolean;
+  idCardUrl?: string | null;
+  idCard?: string | null;
+  idCardImage?: string | null;
+  studentIdCardUrl?: string | null;
+  verificationDocumentUrl?: string | null;
   faculty?: Faculty;
   department?: Department;
   level?: Level;
@@ -73,6 +78,11 @@ export interface StudentRecord {
   levelId?: string;
   isActive?: boolean;
   isVerified?: boolean;
+  idCardUrl?: string | null;
+  idCard?: string | null;
+  idCardImage?: string | null;
+  studentIdCardUrl?: string | null;
+  verificationDocumentUrl?: string | null;
   faculty?: Faculty;
   department?: Department;
   level?: Level;
