@@ -145,7 +145,8 @@ export function ResultsPage({ audience = "admin" }: { audience?: "admin" | "stud
                       .map((candidate: any) => {
                         // Safely pull the user objects from backend response
                         const displayName = candidate?.name || "Unknown Candidate";
-                        const nickname = candidate.nickname ? `"${candidate.user.nickname}"` : "";
+                        const nicknameVal = candidate?.nickname || candidate?.user?.nickname;
+                        const nickname = nicknameVal ? `"${nicknameVal}"` : "";
 
                         return (
                           <div key={candidate.id}>
